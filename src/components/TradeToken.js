@@ -3,11 +3,13 @@ import { ethers } from "ethers";
 import { Card, Button, Form } from "react-bootstrap";
 import ForgeTokenABI from "../abis/forgeTokenABI.json";
 import ErrorModal from './ErrorModal';
+import LoadingModal from './LoadingModal';
 
 const TradeToken = (props) => {
   const [modalTitle, setModalTitle] = useState("");
   const [modalMessage, setModalMessage] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [loadModalShow, setLoadModalShow] = useState(false);
 
   const setModalProps = (isOpen, title, message) => {
     setIsModalOpen(isOpen);
@@ -17,8 +19,10 @@ const TradeToken = (props) => {
 
   const closeHandler =()=> {
     setIsModalOpen(false);
+    props.fetchBalances();
   }
   const handleTrade = async (event) => {
+    props.checkNetwork();
     event.preventDefault();
     const fromTokenId = event.target.fromToken.value;
     const toTokenId = event.target.toToken.value;
@@ -28,27 +32,29 @@ const TradeToken = (props) => {
       return;
     }
     try {
-      console.log(props.provider);
-      const signer = await props.provider.getSigner();
-      console.log(fromTokenId +" : " + toTokenId);
+      const provider = new ethers.providers.Web3Provider(window.ethereum);
+      const signer = await provider.getSigner();
+      console.log("TransferFrom: " +fromTokenId +" to " + toTokenId);
       const forgeTokenContract = new ethers.Contract(
         props.forgeTokenAddress,
         ForgeTokenABI,
         signer
       );
-      console.log(3);
+      setLoadModalShow(true);
       const tx = await forgeTokenContract.tradeToken(fromTokenId, toTokenId);
-      console.log(4);
       await tx.wait();
+      setLoadModalShow(false);
       setModalProps(true,"Success!","Traded successfully!");
     } catch (error) {
       console.log(error);
+      setLoadModalShow(false);
       setModalProps(true,"Error!",error.data.message);
     }
   };
   return (
     <>
       <Card style={{ width: "50%",marginTop: "5%", marginLeft: "auto", marginRight: "auto" }}>
+      <Card.Header>Trade Tokens</Card.Header>
         <Card.Body>
           <Form onSubmit={handleTrade}>
             <Form.Group className="mb-3" controlId="fromToken" >
@@ -64,6 +70,7 @@ const TradeToken = (props) => {
         </Card.Body>
         </Card>
         <ErrorModal isOpen={isModalOpen} title={modalTitle} message={modalMessage} closeHandler={closeHandler} />
+        <LoadingModal show={loadModalShow} title={"Please wait"} message={"Trading transaction in progress"} />
       </>
   )
 }

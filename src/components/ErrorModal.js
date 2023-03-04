@@ -1,17 +1,26 @@
 import React from "react";
 import ReactDOM from "react-dom";
-import Modal from "react-modal";
+
+import {Modal, Button } from "react-bootstrap";
 
 const ErrorModal = (props) => {
   return (
     <>
     {ReactDOM.createPortal(
-      <Modal
-        isOpen={props.isOpen}
-        onRequestClose={() => props.closeHandler("")}>
-        <h2>{props.title}</h2>
-        <p>{props.message}</p>
-      </Modal> ,
+      <Modal show={props.isOpen} onHide={props.closeHandler}
+      size="lg"
+      aria-labelledby="contained-modal-title-vcenter"
+      centered >
+        <Modal.Header closeButton>
+          <Modal.Title>{props.title}</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>{props.message}</Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={props.closeHandler}>
+            Close
+          </Button>
+        </Modal.Footer>
+      </Modal>,
       document.getElementById("modal-root")
       )}
       </>
@@ -19,3 +28,5 @@ const ErrorModal = (props) => {
 };
 
 export default ErrorModal;
+
+
