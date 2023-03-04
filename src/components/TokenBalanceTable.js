@@ -5,16 +5,22 @@ import Modal from "react-modal";
 
 import ForgeTokenABI from "../abis/forgeTokenABI.json";
 import TokenABI from "../abis/tokenABI.json";
+import TradeToken from "./TradeToken";
+import ErrorModal from "./ErrorModal";
 
 Modal.setAppElement("#root");
 
-const forgeTokenAddress = "0xac746D93EBef438d47F7fe4E0081a955b7F42613"; // Forge contract address
-const tokenAddress = "0xDFcaC9F177F78a699e5879568762f339D3c796AE"; // ERC1155 contract address
+const forgeTokenAddress = "0xcf391634998A40E7cE99EdBE922AaCDfFC60de72"; // Forge contract address
+const erc1155Address = "0xDb0ae0eBec43B755aFbcCF25d2a820E4d4D879E2"; // ERC1155 contract address
 const provider = new ethers.providers.Web3Provider(window.ethereum);
 
 const TokenBalanceTable = () => {
   const [balances, setBalances] = useState([]);
   const [signerAddress, setSignerAddress] =useState('');
+
+  const [modalTitle, setModalTitle] = useState("");
+  const [modalMessage, setModalMessage] = useState("");
+  const [isModalOpen, setIsModalOpen] = useState(false);
  
   const fetchAddress = async() => {
     const signer = await provider.getSigner();
@@ -22,10 +28,10 @@ const TokenBalanceTable = () => {
   }
   fetchAddress(); 
   const fetchBalances = async () => {
-    const tokenContract = new ethers.Contract(tokenAddress, TokenABI, provider);
+    const tokenContract = new ethers.Contract(erc1155Address, TokenABI, provider);
     
    
-    console.log("asa : "+typeof(signerAddress));
+    console.log("asa : "+signerAddress);
     const newBalances = [];
     for (let i = 0; i < 7; i++) {
       console.log("inside loop: "+signerAddress);
@@ -41,27 +47,38 @@ const TokenBalanceTable = () => {
     const tokenId = event.target.tokenId.value;
     if (tokenId < 0 || tokenId > 6) {
       // display error message if tokenId is not between 0 and 6
-      setErrorModalMessage("Token ID must be between 0 and 6.");
+      setModalProps(true,"Error!", "Token ID must be between 0 and 6");
       return;
     }
     try {
+      console.log("1");
       const signer = await provider.getSigner();
+      console.log("2");
       const forgeTokenContract = new ethers.Contract(
         forgeTokenAddress,
         ForgeTokenABI,
         signer
       );
-      const tx = await forgeTokenContract.mintToken(tokenId);
+      console.log("3");
+      const tx = await forgeTokenContract.mintToken(tokenId);//note:this is where the transaction is prompted to confirm on metaMask extension
+      console.log("4");
       await tx.wait();
-      setSuccessModalMessage("Token minted successfully!");
+      console.log("5");
+      setModalProps(true,"Success!", "Token minted successfully!");
     } catch (error) {
       console.log(error);
-      setErrorModalMessage(error.data.message);
+      setModalProps(true,"Error!", error.data.message)
     }
   };
+  const setModalProps = (isOpen, title, message) => {
+    setIsModalOpen(isOpen);
+    setModalTitle(title);
+    setModalMessage(message);
+  };
 
-  const [successModalMessage, setSuccessModalMessage] = useState("");
-  const [errorModalMessage, setErrorModalMessage] = useState("");
+  const closeHandler =()=> {
+    setIsModalOpen(false);
+  }
 
   return (
     <>
@@ -102,20 +119,8 @@ const TokenBalanceTable = () => {
         </Form>
         </Card.Body>
       </Card>
-      <Modal
-        isOpen={!!successModalMessage}
-        onRequestClose={() => setSuccessModalMessage("")}
-      >
-        <h2>Success!</h2>
-        <p>{successModalMessage}</p>
-      </Modal>
-      <Modal
-        isOpen={!!errorModalMessage}
-        onRequestClose={() => setErrorModalMessage("")}
-      >
-        <h2>Error</h2>
-        <p>{errorModalMessage}</p>
-      </Modal>
+      <TradeToken forgeTokenAddress={forgeTokenAddress} erc1155Address = {erc1155Address} provider={provider} />
+      <ErrorModal isOpen={isModalOpen} title={modalTitle} message={modalMessage} closeHandler={closeHandler} />
     </>
   );
 };
