@@ -6,21 +6,60 @@ import "@openzeppelin/contracts/utils/Counters.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
 contract MyERC1155 is ERC1155, Ownable {
+       address public authAddress;
     
     constructor() ERC1155("") {
+    }
+
+    function setAuthAddress(address _authAddress) public onlyOwner{
+        require(_authAddress == address(0), "AuthAddress is already set");
+        authAddress=_authAddress;
     }
 
     function setURI(string memory newuri) public onlyOwner {
         _setURI(newuri);
     }
 
-    function mintToken(address to, uint256 tokenId,uint256 amount) public {
+    modifier authority() {
+        require(authAddress != address(0),"AuthAddress is not set yet");
+        require(msg.sender == authAddress,"Does not have authority to perform the action");
+        _;
+    }
+
+    //making sure only the ForgeToken contract address can have access to the below two methods
+    function mintToken(address to, uint256 tokenId,uint256 amount) public authority{
         _mint(to, tokenId, amount, "");
     }
 
-    function burnToken(address to, uint256 tokenId, uint256 amount) public {
+    function burnToken(address to, uint256 tokenId, uint256 amount) public authority{
         _burn(to, tokenId, amount);
     }
+
+    //make sure other unused external/public are protected from external usage
+    function safeBatchTransferFrom(
+        address from,
+        address to,
+        uint256[] memory ids,
+        uint256[] memory amounts,
+        bytes memory data
+    ) public override onlyOwner{
+        super.safeBatchTransferFrom(from,to,ids,amounts,data);
+    }
+
+    function safeTransferFrom(
+        address from,
+        address to,
+        uint256 id,
+        uint256 amount,
+        bytes memory data
+    ) public override onlyOwner{
+        super.safeTransferFrom(from, to, id, amount, data);
+    }
+
+    function setApprovalForAll(address operator, bool approved) public override onlyOwner{
+        super.setApprovalForAll(operator, approved);
+    }
+
 }
 
 contract ForgeToken {
