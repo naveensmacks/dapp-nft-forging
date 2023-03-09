@@ -147,11 +147,13 @@ contract ForgeToken {
     
     function tradeToken(uint256 _fromTokenId, uint256 _toTokenId) public {
 
-        require(_fromTokenId >= TOKEN_0 && _fromTokenId <= TOKEN_2, "Invalid token id");
-        require(_toTokenId >= TOKEN_0 && _toTokenId <= TOKEN_2, "Invalid token id");
+        require(_fromTokenId >= TOKEN_0 && _fromTokenId <= TOKEN_6, "Invalid token From token id");
+        require(_toTokenId >= TOKEN_0 && _toTokenId <= TOKEN_2, "Invalid To token id");
         require(erc1155.balanceOf(msg.sender, _fromTokenId) > 0, "You dont have enough tokens to trade");
         
         erc1155.burnToken(msg.sender, _fromTokenId, 1);
-        erc1155.mintToken(msg.sender, _toTokenId, 1);
+        if(_fromTokenId<TOKEN_5) {
+            erc1155.mintToken(msg.sender, _toTokenId, 1);
+        }
     }
 }
