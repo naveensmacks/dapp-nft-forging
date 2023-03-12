@@ -54,7 +54,7 @@ contract MyERC1155 is ERC1155, Ownable {
         uint256[] memory ,
         bytes memory 
     ) public pure override{
-       require(false, "Access Prohibited");
+       revert("Access Prohibited");
     }
 
     function safeTransferFrom(
@@ -64,11 +64,11 @@ contract MyERC1155 is ERC1155, Ownable {
         uint256 ,
         bytes memory
     ) public pure override{
-        require(false, "Access Prohibited");
+        revert("Access Prohibited");
     }
 
     function setApprovalForAll(address, bool) public pure override{
-        require(false, "Access Prohibited");
+         revert("Access Prohibited");
     }
 
 }
@@ -101,7 +101,7 @@ contract ForgeToken {
         } else if(tokenId==6) {
             mintToken6();
         } else {
-           require(false, "Invalid token ID"); 
+           revert("Invalid token ID");
         }
     }
 
