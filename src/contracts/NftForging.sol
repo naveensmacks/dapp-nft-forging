@@ -2,27 +2,38 @@
 pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
-import "@openzeppelin/contracts/utils/Counters.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/utils/Strings.sol";
 
 contract MyERC1155 is ERC1155, Ownable {
-       address public authAddress;
+    address public authAddress;
     
     constructor() ERC1155("") {
     }
 
-    function setAuthAddress(address _authAddress) public onlyOwner{
-        require(_authAddress == address(0), "AuthAddress is already set");
-        authAddress=_authAddress;
+    function setAuthAddress(address addr) public onlyOwner{
+        require(authAddress == address(0), "AuthAddress is already set");
+        authAddress= addr;
     }
 
     function setURI(string memory newuri) public onlyOwner {
         _setURI(newuri);
     }
 
+    function uri(uint256 tokenId) public view override returns (string memory) {
+       // Get the base URI
+        string memory baseURI = super.uri(0);
+
+        // Construct the final token URI with the token ID included
+        string memory tokenURI = string(abi.encodePacked(baseURI, Strings.toString(tokenId), ".json"));
+
+        // Return the final URI string
+        return tokenURI;
+    }
+
     modifier authority() {
         require(authAddress != address(0),"AuthAddress is not set yet");
-        require(msg.sender == authAddress,"Does not have authority to perform the action");
+        require(msg.sender == authAddress,"Does not have authority");
         _;
     }
 
@@ -37,27 +48,27 @@ contract MyERC1155 is ERC1155, Ownable {
 
     //make sure other unused external/public are protected from external usage
     function safeBatchTransferFrom(
-        address from,
-        address to,
-        uint256[] memory ids,
-        uint256[] memory amounts,
-        bytes memory data
-    ) public override onlyOwner{
-        super.safeBatchTransferFrom(from,to,ids,amounts,data);
+        address ,
+        address ,
+        uint256[] memory ,
+        uint256[] memory ,
+        bytes memory 
+    ) public pure override{
+       require(false, "Access Prohibited");
     }
 
     function safeTransferFrom(
-        address from,
-        address to,
-        uint256 id,
-        uint256 amount,
-        bytes memory data
-    ) public override onlyOwner{
-        super.safeTransferFrom(from, to, id, amount, data);
+        address ,
+        address ,
+        uint256 ,
+        uint256 ,
+        bytes memory
+    ) public pure override{
+        require(false, "Access Prohibited");
     }
 
-    function setApprovalForAll(address operator, bool approved) public override onlyOwner{
-        super.setApprovalForAll(operator, approved);
+    function setApprovalForAll(address, bool) public pure override{
+        require(false, "Access Prohibited");
     }
 
 }
@@ -79,7 +90,7 @@ contract ForgeToken {
     }
 
     function mintToken(uint256 tokenId) public {
-        if(tokenId <= 2) {
+        if(tokenId >= 0 && tokenId <= 2) {
             mintSmallTokens(tokenId);
         } else if(tokenId==3) {
             mintToken3();
@@ -90,7 +101,7 @@ contract ForgeToken {
         } else if(tokenId==6) {
             mintToken6();
         } else {
-           require(true, "Invalid token ID"); 
+           require(false, "Invalid token ID"); 
         }
     }
 
@@ -126,7 +137,6 @@ contract ForgeToken {
         require(erc1155.balanceOf(msg.sender, TOKEN_2) >= 1, "Not enough token_2");
 
         // Burn token 0 and token 2 to mint token 5
-
         erc1155.burnToken(msg.sender, TOKEN_0, 1);
         erc1155.burnToken(msg.sender, TOKEN_2, 1);
         
@@ -149,10 +159,11 @@ contract ForgeToken {
 
         require(_fromTokenId >= TOKEN_0 && _fromTokenId <= TOKEN_6, "Invalid token From token id");
         require(_toTokenId >= TOKEN_0 && _toTokenId <= TOKEN_2, "Invalid To token id");
-        require(erc1155.balanceOf(msg.sender, _fromTokenId) > 0, "You dont have enough tokens to trade");
+        require(erc1155.balanceOf(msg.sender, _fromTokenId) > 0, "You dont have enough tokens");
         
         erc1155.burnToken(msg.sender, _fromTokenId, 1);
-        if(_fromTokenId<TOKEN_5) {
+        // Trading Tokens 4,5,6 you wont get get anything, it will just burn.
+        if(_fromTokenId<=TOKEN_3) {
             erc1155.mintToken(msg.sender, _toTokenId, 1);
         }
     }
