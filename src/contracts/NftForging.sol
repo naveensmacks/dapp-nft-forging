@@ -74,7 +74,7 @@ contract MyERC1155 is ERC1155, Ownable {
 }
 
 contract ForgeToken {
-    MyERC1155 public erc1155;
+    MyERC1155 immutable public erc1155;
     mapping(uint256 => uint256) public cooldownUntil;
 
     uint256 constant private TOKEN_0 = 0;
@@ -106,9 +106,11 @@ contract ForgeToken {
     }
 
     function mintSmallTokens(uint256 tokenId) private {
-        require(block.timestamp >= cooldownUntil[tokenId], "Mint cooldown");
-        erc1155.mintToken(msg.sender, tokenId, 1);
+        if (block.timestamp < cooldownUntil[tokenId]) {
+            revert("Mint cooldown");
+        }
         cooldownUntil[tokenId] = block.timestamp + 1 minutes;
+        erc1155.mintToken(msg.sender, tokenId, 1);
     }
 
     function mintToken3() private {
@@ -155,16 +157,16 @@ contract ForgeToken {
         erc1155.mintToken(msg.sender, TOKEN_6, 1);
     }
     
-    function tradeToken(uint256 _fromTokenId, uint256 _toTokenId) public {
+    function tradeToken(uint256 fromTokenId, uint256 toTokenId) public {
 
-        require(_fromTokenId >= TOKEN_0 && _fromTokenId <= TOKEN_6, "Invalid token From token id");
-        require(_toTokenId >= TOKEN_0 && _toTokenId <= TOKEN_2, "Invalid To token id");
-        require(erc1155.balanceOf(msg.sender, _fromTokenId) > 0, "You dont have enough tokens");
+        require(fromTokenId >= TOKEN_0 && fromTokenId <= TOKEN_6, "Invalid token From token id");
+        require(toTokenId >= TOKEN_0 && toTokenId <= TOKEN_2, "Invalid To token id");
+        require(erc1155.balanceOf(msg.sender, fromTokenId) > 0, "You dont have enough tokens");
         
-        erc1155.burnToken(msg.sender, _fromTokenId, 1);
+        erc1155.burnToken(msg.sender, fromTokenId, 1);
         // Trading Tokens 4,5,6 you wont get get anything, it will just burn.
-        if(_fromTokenId<=TOKEN_3) {
-            erc1155.mintToken(msg.sender, _toTokenId, 1);
+        if(fromTokenId<=TOKEN_3) {
+            erc1155.mintToken(msg.sender, toTokenId, 1);
         }
     }
 }
